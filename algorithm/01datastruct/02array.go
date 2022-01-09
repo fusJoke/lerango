@@ -44,6 +44,23 @@ func append(a *Array, element int)  {
 	a.len = a.len +1
 }
 
+func (a *Array) Get(index int) int {
+	// 越界了
+	if a.len == 0 || index >= a.len {
+		panic("index over len")
+	}
+	return a.array[index]
+}
+
+func (a *Array) Len() int {
+	return a.len
+}
+
+// Cap 返回容量
+func (a *Array) Cap() int {
+	return a.cap
+}
+
 func main() {
 	
 }
