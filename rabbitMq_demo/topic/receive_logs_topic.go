@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/streadway/amqp"
 	"log"
+	"os"
 )
 
 func failOnError(err error, msg string) {
@@ -17,12 +18,12 @@ func main() {
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	failOnError(err, "Failed to connect to RabbitMQ")
+	failOnError(err, "failed to conn channel")
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"logs",
-		"fanout",
+		"logs_topic",
+		"topic",
 		true,
 		false,
 		false,
@@ -39,30 +40,37 @@ func main() {
 		false,
 		nil,
 		)
-	failOnError(err, "Failed to declare an queue")
+	failOnError(err, "Failed to declare a queue")
 
-	err = ch.QueueBind(
+	if len(os.Args) < 2 {
+		log.Printf("Usage: %s [binding_key]...", os.Args[0])
+		os.Exit(0)
+	}
+
+	for _, s := range os.Args[1:] {
+		log.Printf("Binding queue %s to exchange %s with routing key %s",
+			q.Name, "logs_topic", s)
+		err = ch.QueueBind(
 			q.Name,
-			"",
-			"logs",
+			s,
+			"logs_topic",
 			false,
 			nil,
-		)
-	failOnError(err, "Failed to bind a queue")
-
-	msgs, err := ch.Consume(
-		q.Name,
-		"",
-		true,
-		false,
-		false,
-		false,
-		nil,
-		)
+			)
+	}
 	failOnError(err, "Failed to register a consumer")
 
-	forever := make(chan bool)
+	msgs, err := ch.Consume(
+		q.Name, // queue
+		"",     // consumer
+		true,   // auto ack
+		false,  // exclusive
+		false,  // no local
+		false,  // no wait
+		nil,    // args
+	)
 
+	forever := make(chan bool)
 	go func() {
 		for d := range msgs {
 			log.Printf(" [x] %s", d.Body)
@@ -71,5 +79,4 @@ func main() {
 
 	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
 	<-forever
-
 }

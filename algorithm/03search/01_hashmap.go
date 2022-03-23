@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"github.com/OneOfOne/xxhash"
 	"math"
 	"sync"
-	"github.com/OneOfOne/xxhash"
 )
 
 const (

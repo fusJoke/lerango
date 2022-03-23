@@ -15,28 +15,28 @@ func failOnError(err error, msg string) {
 
 func main() {
 	conn, err := amqp.Dial("amqp://fusjoke:123456@localhost:5672/my_vhost")
-	failOnError(err, "conn failed")
+	failOnError(err, "Failed to connect to RabbitMQ")
 	defer conn.Close()
 
 	ch, err := conn.Channel()
-	failOnError(err, "channel failed to conn")
+	failOnError(err, "failed to create channel")
 	defer ch.Close()
 
 	err = ch.ExchangeDeclare(
-		"log_direct",
-		"direct",
+		"logs_topic",
+		"topic",
 		true,
 		false,
 		false,
 		false,
 		nil,
 		)
-	failOnError(err, "channel failed to conn")
+	failOnError(err, "Failed to declare an exchange")
 
-	body := bodyForm(os.Args)
+	body := bodyFrom(os.Args)
 	err = ch.Publish(
-		"log_direct",
-		severityForm(os.Args),
+		"logs_topic",
+		severityFrom(os.Args),
 		false,
 		false,
 		amqp.Publishing{
@@ -44,25 +44,24 @@ func main() {
 			Body: []byte(body),
 		})
 	failOnError(err, "Failed to publish a message")
-
 	log.Printf(" [x] Sent %s", body)
 
 }
 
-func bodyForm(args []string) string {
+func bodyFrom(args []string) string {
 	var s string
-	if ( len(s) < 3) || os.Args[2] == "" {
-		s ="hello"
+	if (len(args) < 3) || os.Args[2] == "" {
+		s = "hello"
 	} else {
 		s = strings.Join(args[2:], " ")
 	}
 	return s
 }
 
-func severityForm(args []string) string {
+func severityFrom(args []string) string {
 	var s string
 	if (len(args) < 2) || os.Args[1] == "" {
-		s = "info"
+		s = "anonymous.info"
 	} else {
 		s = os.Args[1]
 	}
